@@ -11,7 +11,7 @@ int main(int argc, char* argv[])
     UdpClient* up = new UdpClient(server_ip, server_port);
     // 创建套接字
     up->InitClient();
-    // 启动客户端，客户端不需要去绑定端口号，只需传入服务端的端口号和ip地址
+    // 启动客户端，客户端不需要去绑定端口号，只需传入服务端的ip地址和端口号
     // 启动后，向服务端发送数据
     up->Start();
     return 0;
