@@ -9,7 +9,7 @@ int main(int argc, char* argv[])
         std::cerr << "Usage: " << argv[0]<< " port" << std::endl;
         return 1;
     }
-    int fd = open("test.txt", O_WRONLY | O_RDONLY | O_CREAT);
+    //int fd = open("test.txt", O_WRONLY | O_RDONLY | O_CREAT);
     std::string ip = "127.0.0.1"; //本地环回
     // 将ip设置为云服务的公网，而不是本地环回，此时会发现bind失败
     // 由于云服务器的IP地址是由对应的云厂商提供的，这个IP地址并不一定是真正的公网IP，

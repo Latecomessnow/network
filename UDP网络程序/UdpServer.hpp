@@ -29,7 +29,15 @@ public:
         memset(&local, 0, sizeof(local));
         local.sin_family = AF_INET;
         local.sin_port = htons(_port);
-        local.sin_addr.s_addr = inet_addr(_ip.c_str());
+
+        // local.sin_addr.s_addr = inet_addr(_ip.c_str());
+
+        // 绑定INADDR_ANY, 让外网访问
+        // 此时当我们再重新编译运行服务器时就不会绑定失败了，
+        // 并且此时当我们再用netstat命令查看时会发现，该服务器的本地IP地址变成了0.0.0.0，
+        //这就意味着该UDP服务器可以在本地读取任何一张网卡里面的数据。
+        local.sin_addr.s_addr = INADDR_ANY; // 0
+
         // 绑定
         if (bind(_sockfd, (struct sockaddr *)&local, sizeof(local)) < 0)
         {
@@ -61,6 +69,10 @@ public:
             {
                 std::cerr << "recvfrom fail" << std::endl;
             }
+            // 服务端回显消息给客户端
+            std::string echo_msg = "server get!->";
+            echo_msg += buffer;
+            sendto(_sockfd, echo_msg.c_str(), echo_msg.size(), 0, (struct sockaddr*)&peer, len);
         }
     }
     ~UdpServer()

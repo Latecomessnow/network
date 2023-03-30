@@ -51,6 +51,20 @@ public:
             getline(std::cin, msg);
             // 此处不能是sizeof(msg)
             sendto(_sockfd, msg.c_str(), msg.size(), 0, (struct sockaddr *)&peer, sizeof(peer));
+            char buffer[128];
+            // 保存一下服务端回显消息过来的网络信息
+            struct sockaddr_in tmp;
+            socklen_t len = sizeof(tmp);
+            ssize_t s = recvfrom(_sockfd, buffer, sizeof(buffer) - 1, 0, (struct sockaddr*)&tmp, &len);
+            if (s > 0)
+            {
+                buffer[s] = '\0';
+                std::cout << buffer << std::endl;
+            }
+            else
+            {
+                std::cerr << "recvfrom fail" << std::endl;
+            }
         }
     }
 
