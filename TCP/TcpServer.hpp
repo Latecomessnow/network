@@ -1,3 +1,4 @@
+#pragma once
 #include <iostream>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -10,6 +11,7 @@
 #include <signal.h>
 #include <sys/wait.h>
 #include <pthread.h>
+#include "threadPool.hpp"
 
 // 在初始化TCP服务器时，只有创建套接字成功、绑定成功、监听成功
 // 此时TCP服务器的初始化才算完成。
@@ -298,6 +300,71 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 // 多线程版服务器
+
+// 注意Handler类的定义需要放在Task类定义前
+class Handler
+{
+public:
+	Handler()
+	{
+	}
+	~Handler()
+	{
+	}
+	void operator()(int sock, std::string client_ip, int client_port)
+	{
+		char buffer[1024];
+		while (true)
+		{
+			ssize_t size = read(sock, buffer, sizeof(buffer) - 1);
+			if (size > 0)
+			{ // 读取成功
+				buffer[size] = '\0';
+				std::cout << client_ip << ":" << client_port << "# " << buffer << std::endl;
+
+				write(sock, buffer, size);
+			}
+			else if (size == 0)
+			{ // 对端关闭连接
+				std::cout << client_ip << ":" << client_port << " close!" << std::endl;
+				break;
+			}
+			else
+			{ // 读取失败
+				std::cerr << sock << " read error!" << std::endl;
+				break;
+			}
+		}
+		close(sock); // 归还文件描述符
+		std::cout << client_ip << ":" << client_port << " service done!" << std::endl;
+	}
+};
+class Task
+{
+public:
+	Task()
+	{
+	}
+	Task(int sock, std::string client_ip, int client_port)
+		: _sock(sock), _client_ip(client_ip), _client_port(client_port)
+	{
+	}
+	~Task()
+	{
+	}
+	// 任务处理函数
+	void Run()
+	{
+		_handler(_sock, _client_ip, _client_port); // 调用仿函数
+	}
+
+private:
+	int _sock;				// 套接字
+	std::string _client_ip; // IP地址
+	int _client_port;		// 端口号
+	Handler _handler;		// 处理方法
+};
+
 class Param // 给新线程传入的参数
 {
 public:
@@ -351,6 +418,8 @@ public:
 			exit(4);
 		}
 		std::cout << "listen success!" << std::endl;
+		// 创建线程池
+		_tp = new ThreadPool<Task>(); // 构造线程池对象
 	}
 	// 回声服务器
 	static void Server(int sock, std::string client_ip, int client_port)
@@ -388,8 +457,9 @@ public:
 	}
 	void Start()
 	{
+		_tp->ThreadPoolInit(); // 初始化线程池
 		// 父进程忽略子进程退出信号，只关注自己的任务
-		signal(SIGCHLD, SIG_IGN); // 信号处理动作SIG_IGN
+		// signal(SIGCHLD, SIG_IGN); // 信号处理动作SIG_IGN
 		while (true)
 		{
 			// 获取客户端对端网络信息,对端的sockaddr_in信息
@@ -411,23 +481,30 @@ public:
 			int client_port = ntohs(peer.sin_port);
 			std::cout << "get a new link->" << sock << " [" << client_ip << "]:" << client_port << std::endl;
 
-			// 创建线程去执行任务例程
-			Param* p = new Param(sock, client_ip, client_port);
-			pthread_t tid;
-			pthread_create(&tid, nullptr, Handler, (void*)p);
+			// 1. 多线程版
+			// // 创建线程去执行任务例程
+			// Param* p = new Param(sock, client_ip, client_port);
+			// pthread_t tid;
+			// pthread_create(&tid, nullptr, Handler, (void*)p);
+
+			// 2. 线程池版
+			Task task(sock, client_ip, client_port); // 构造任务
+			_tp->Push(task);						 // 将任务Push进任务队列
 		}
 	}
 	// 创建线程执行的例程必须是一个参数和返回值都是void*的函数
 	// 所以将该类内成员函数设置为静态成员函数去掉第一个this指针参数
-	static void* Handler(void* arg)
+	static void *Handler(void *arg)
 	{
 		pthread_detach(pthread_self()); // 分离线程
-		Param* p = (Param*)arg;
+		Param *p = (Param *)arg;
 		Server(p->_sock, p->_ip, p->_port);
 		delete p;
 		return nullptr;
 	}
+
 private:
 	int _listen_sock;
 	int _port;
+	ThreadPool<Task> *_tp;
 };
