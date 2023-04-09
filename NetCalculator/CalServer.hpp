@@ -10,7 +10,7 @@
 #include <cstring>
 #include <pthread.h>
 #include <memory>
-
+#include "Protocol.hpp"
 class Param
 {
 public:
@@ -22,6 +22,7 @@ public:
 class CalServer
 {
 public:
+    // this指针CalServer* const this
     CalServer(int port)
         : _listen_sock(-1), _port(port)
     {
@@ -33,7 +34,7 @@ public:
             close(_listen_sock);
         }
     }
-    void Serverinit()
+    void ServerInit()
     {
         // 1. 创建套接字
         _listen_sock = socket(AF_INET, SOCK_STREAM, 0);
@@ -62,16 +63,73 @@ public:
             exit(4);
         }
         std::cout << "listen success!" << std::endl;
+        std::cout << _listen_sock << " " << _port << std::endl;
     }
-    static void* Routine(void* arg)
+    static void *Routine(void *arg)
     {
         pthread_detach(pthread_self());
-        Param* p = (Param*)arg;
+        int sock = *(int *)arg;
+        delete (int *)arg;
         // 服务端不断获取客户端发送过来的操作
         while (true)
         {
-
+            Request rq;
+            // 静态成员函数不能够访问类的私有成员变量
+            // 因为私有成员变量是通过this指针去访问的，而静态成员函数bu
+            ssize_t s = recv(sock, &rq, sizeof(rq), 0);
+            if (s > 0)
+            {
+                Response rp = {0, 0};
+                switch (rq.op)
+                {
+                case '+':
+                    rp.result = rq.x + rq.y;
+                    break;
+                case '-':
+                    rp.result = rq.x - rq.y;
+                    break;
+                case '*':
+                    rp.result = rq.x * rq.y;
+                    break;
+                case '/':
+                    if (rq.y == 0)
+                    {
+                        rp.code = 1; // 除0错误
+                    }
+                    else
+                    {
+                        rp.result = rq.x / rq.y;
+                    }
+                    break;
+                case '%':
+                    if (rq.y == 0)
+                    {
+                        rp.code = 2; // 模0错误
+                    }
+                    else
+                    {
+                        rp.result = rq.x % rq.y;
+                    }
+                    break;
+                default:
+                    rp.code = 3; // 非法运算
+                    break;
+                }
+                // 将结果发送给客户端
+                send(sock, &rp, sizeof(rp), 0);
+            }
+            else if (s == 0)
+            {
+                std::cout << "server done!" << std::endl;
+                break;
+            }
+            else
+            {
+                std::cerr << "recv error!" << std::endl;
+                exit(5);
+            }
         }
+        close (sock);
         return nullptr;
     }
     // 启动服务器
@@ -83,6 +141,7 @@ public:
             memset(&peer, 0, sizeof(peer));
             socklen_t len = sizeof(peer);
             // len是一个输出型参数
+            std::cout << "test" << std::endl;
             int sock = accept(_listen_sock, (struct sockaddr *)&peer, &len);
             if (sock < 0)
             {
@@ -96,7 +155,7 @@ public:
             std::cout << "client_ip: " << client_ip << " clietn_port: " << client_port << std::endl;
             // unique_ptr<Param> p(new Param(sock, client_ip, client_port));
             // Param* p =  new Param(sock, client_ip, client_port);
-            int* p = new int(sock);
+            int *p = new int(sock);
             // 创建线程去执行例程
             pthread_t tid = 0;
             pthread_create(&tid, nullptr, Routine, (void *)p);
