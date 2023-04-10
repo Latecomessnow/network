@@ -63,7 +63,7 @@ public:
             exit(4);
         }
         std::cout << "listen success!" << std::endl;
-        std::cout << _listen_sock << " " << _port << std::endl;
+        //std::cout << _listen_sock << " " << _port << std::endl;
     }
     static void *Routine(void *arg)
     {
@@ -75,7 +75,7 @@ public:
         {
             Request rq;
             // 静态成员函数不能够访问类的私有成员变量
-            // 因为私有成员变量是通过this指针去访问的，而静态成员函数bu
+            // 因为私有成员变量是通过this指针去访问的，而静态成员函数没有this指针
             ssize_t s = recv(sock, &rq, sizeof(rq), 0);
             if (s > 0)
             {
@@ -129,7 +129,7 @@ public:
                 exit(5);
             }
         }
-        close (sock);
+        close(sock);
         return nullptr;
     }
     // 启动服务器
@@ -141,8 +141,9 @@ public:
             memset(&peer, 0, sizeof(peer));
             socklen_t len = sizeof(peer);
             // len是一个输出型参数
-            std::cout << "test" << std::endl;
+            //std::cout << "test" << std::endl;
             int sock = accept(_listen_sock, (struct sockaddr *)&peer, &len);
+            //std::cout << "test" << std::endl;
             if (sock < 0)
             {
                 std::cout << "accept error, continue next!" << std::endl;

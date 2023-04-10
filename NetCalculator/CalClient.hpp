@@ -58,7 +58,7 @@ public:
             std::cin >> rq.x;
             std::cout << "请输入右操作数# ";
             std::cin >> rq.y;
-            std::cout << "请输入操作符# ";
+            std::cout << "请输入操作符(+-*/%)# ";
             std::cin >> rq.op;
             send(_client_sock, &rq, sizeof(rq), 0);
 
@@ -66,7 +66,7 @@ public:
             Response rp;
             recv(_client_sock, &rp, sizeof(rp), 0);
             std::cout << "status: " << rp.code << std::endl;
-            std::cout << rq.x << " " << rq.op << " = " << rp.result << std::endl;
+            std::cout << rq.x << " " << rq.op << " " <<  rq.y << " = " << rp.result << std::endl;
         }
     }
 

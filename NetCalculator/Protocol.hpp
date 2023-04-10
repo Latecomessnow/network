@@ -4,7 +4,7 @@
 struct Request
 {
     int x;   // 左操作数
-    int y;   // 有操作数
+    int y;   // 右操作数
     char op; // 操作符
 };
 
