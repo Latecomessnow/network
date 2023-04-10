@@ -12,6 +12,7 @@ int main(int argc, char *argv[])
 		Usage(argv[0]);
 		exit(1);
 	}
+	// 绝对不能在此写成	int port = htons(atoi(argv[1])), 需要一个整型类型的端口号去构造服务器对象
 	int port = atoi(argv[1]);
 	TcpServer *svr = new TcpServer(port);
 	svr->InitServer();
