@@ -204,8 +204,8 @@ int main()
 	struct sockaddr_in local;
 	memset(&local, 0, sizeof(local));
 	local.sin_family = AF_INET;
-	local.sin_port = htons(8081);
-	local.sin_addr.s_addr = htonl(INADDR_ANY);
+	local.sin_port = htons(8080);
+	local.sin_addr.s_addr = INADDR_ANY;
 	if (bind(listen_sock, (struct sockaddr*)&local, sizeof(local)) < 0){
 		cerr << "bind error!" << endl;
 		return 2;
@@ -237,15 +237,6 @@ int main()
 			cout << buffer << endl;
 			cout << "---------------------------http request end---------------------------" << endl;
 			
-			//构建HTTP响应
-			string status_line = "http/1.1 307 Temporary Redirect\n"; //状态行
-			string response_header = "Location: https://www.csdn.net/\n"; //响应报头
-			string blank = "\n"; //空行
-			string response = status_line + response_header + blank; //响应报文
-			
-			//响应HTTP请求
-			send(sock, response.c_str(), response.size(), 0);
-
 			close(sock);
 			exit(0);
 		}
@@ -255,3 +246,4 @@ int main()
 	}
 	return 0;
 }
+
