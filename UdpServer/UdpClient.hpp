@@ -5,6 +5,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <cstring>
 
 class UdpClient
 {
@@ -34,6 +35,7 @@ public:
     void Start()
     {
         struct sockaddr_in server;
+        memset(&server, '0', sizeof(server));
         server.sin_family = AF_INET;
         server.sin_port = htons(_server_port);
         server.sin_addr.s_addr = inet_addr(_server_ip.c_str());
